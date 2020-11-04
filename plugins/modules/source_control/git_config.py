@@ -214,7 +214,7 @@ def main():
         # Run from root directory to avoid accidentally picking up any local config settings
         dir = "/"
 
-    (rc, out, err) = module.run_command(' '.join(args), cwd=dir)
+    (rc, out, err) = module.run_command(' '.join(args), cwd=dir, ignore_invalid_cwd=False)
     if params['list_all'] and scope and rc == 128 and 'unable to read config file' in err:
         # This just means nothing has been set at the given scope
         module.exit_json(changed=False, msg='', config_values={})
