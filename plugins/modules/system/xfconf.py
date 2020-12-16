@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# (c) 2020, Alexei Znamensky <russoz@gmail.com>
 # (c) 2017, Joseph Benden <joe@benden.us>
 #
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -10,31 +11,31 @@ __metaclass__ = type
 DOCUMENTATION = '''
 module: xfconf
 author:
-    - "Joseph Benden (@jbenden)"
-    - "Alexei Znamensky (@russoz)"
+    - Joseph Benden (@jbenden)
+    - Alexei Znamensky (@russoz)
 short_description: Edit XFCE4 Configurations
 description:
-  - This module allows for the manipulation of Xfce 4 Configuration via
-    xfconf-query.  Please see the xfconf-query(1) man pages for more details.
+  - This module allows for the manipulation of Xfce 4 Configuration via xfconf-query.
+  - Please see the xfconf-query(1) man pages for more details.
 options:
   channel:
     description:
     - A Xfconf preference channel is a top-level tree key, inside of the
       Xfconf repository that corresponds to the location for which all
-      application properties/keys are stored. See man xfconf-query(1)
+      application properties/keys are stored.
     required: yes
     type: str
   property:
     description:
     - A Xfce preference key is an element in the Xfconf repository
-      that corresponds to an application preference. See man xfconf-query(1)
+      that corresponds to an application preference.
     required: yes
     type: str
   value:
     description:
     - Preference properties typically have simple values such as strings,
       integers, or lists of strings and integers. This is ignored if the state
-      is "get". For array mode, use a list of values. See man xfconf-query(1)
+      is "get". For array mode, use a list of values.
     type: list
     elements: raw
   value_type:
@@ -57,6 +58,8 @@ options:
     default: 'no'
     aliases: ['array']
     version_added: 1.0.0
+extends_documentation_fragment:
+- community.general.module_helper.ack_named_deprecations
 '''
 
 EXAMPLES = """
@@ -120,7 +123,7 @@ RETURN = '''
 '''
 
 from ansible_collections.community.general.plugins.module_utils.module_helper import (
-    ModuleHelper, CmdMixin, StateMixin, ArgFormat
+    CmdStateModuleHelper, ArgFormat
 )
 
 
@@ -146,7 +149,7 @@ class XFConfException(Exception):
     pass
 
 
-class XFConfProperty(CmdMixin, StateMixin, ModuleHelper):
+class XFConfProperty(CmdStateModuleHelper):
     module = dict(
         argument_spec=dict(
             state=dict(default="present",
@@ -162,6 +165,11 @@ class XFConfProperty(CmdMixin, StateMixin, ModuleHelper):
         required_if=[('state', 'present', ['value', 'value_type'])],
         required_together=[('value', 'value_type')],
         supports_check_mode=True,
+    )
+    named_deprecations = dict(
+        facts=CmdStateModuleHelper.PrepareNamedDeprecation.deprecate(
+            'Module use of facts is not a best practice and will be deprecated. Use return values instead.',
+            version='3.0.0', collection_name='community.general'),
     )
 
     facts_name = "xfconf"
@@ -187,6 +195,9 @@ class XFConfProperty(CmdMixin, StateMixin, ModuleHelper):
         self.update_xfconf_output(property=self.module.params['property'],
                                   channel=self.module.params['channel'],
                                   previous_value=None)
+
+    def __quit_module__(self):
+        self.trigger_named_deprecation('facts')
 
     def process_command_output(self, rc, out, err):
         if err.rstrip() == self.does_not:
