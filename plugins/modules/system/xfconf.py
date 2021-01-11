@@ -186,7 +186,8 @@ class XFConfProperty(CmdStateModuleHelper):
 
     def update_xfconf_output(self, **kwargs):
         self.update_output(**kwargs)
-        self.update_facts(**kwargs)
+        if not self.named_deprecations['facts'].acked:
+            self.update_facts(**kwargs)
 
     def __init_module__(self):
         self.does_not = 'Property "{0}" does not exist on channel "{1}".'.format(self.module.params['property'],
